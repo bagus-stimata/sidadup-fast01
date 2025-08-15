@@ -9,8 +9,8 @@ class FAreaBase(BaseModel):
     description: str
     fdivisionBean: int
     # status_active: bool = Field(default=True, alias="statusActive") #Mapping Tanpa Dimapping malah bisa
-    status_active: bool = True
-    @field_validator('status_active')
+    statusActive: bool = True
+    @field_validator('statusActive')
     def check_status_active(cls, v):
         print(f"[DEBUG] status_active received: {v}")
         return v

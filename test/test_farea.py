@@ -62,7 +62,7 @@ async def test_create_farea_del():
             kode2="CNT",
             description="Agregat Test",
             fdivisionBean=1,
-            status_active=True,
+            statusActive=True,
             fregionBean=1
         )
         db.add(dummy)
