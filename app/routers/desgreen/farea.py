@@ -6,7 +6,7 @@ from app.core.security import get_current_user
 from app.repository.farea_repo import create_farea, get_all_farea
 from app.repository.raw.farea_agg import count_active_area_per_division
 from app.schemas.farea import FAreaCreate, FAreaResponse
-from app.models.farea import FArea
+from app.models.sidadup.farea import FArea
 
 router = APIRouter(prefix="/api/desgreen", tags=["farea"])
 

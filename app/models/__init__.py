@@ -1,3 +1,2 @@
-from .farea import FArea
+from app.models.sidadup.farea import FArea
 from .user import User
-from app.core.database import Base

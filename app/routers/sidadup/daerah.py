@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.daerah import Daerah
-from app.schemas.daerah import DaerahCreate, DaerahUpdate, DaerahRead
+from app.schemas.sidadup.daerah import DaerahCreate, DaerahUpdate, DaerahRead
 
 router = APIRouter(prefix="/api/daerah", tags=["daerah"])
 

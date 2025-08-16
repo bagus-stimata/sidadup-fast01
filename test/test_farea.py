@@ -3,7 +3,7 @@ from httpx import AsyncClient, ASGITransport  # <--- Tambahkan ASGITransport
 from app.core.database import SessionLocal
 from app.main import app
 from app.core.security import create_access_token  # <--- Buat token valid
-from app.models.farea import FArea
+from app.models.sidadup.farea import FArea
 import pytest
 
 @pytest.mark.asyncio

@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.provinsi import Provinsi
-from app.schemas.provinsi import ProvinsiCreate, ProvinsiUpdate, ProvinsiRead
+from app.models.sidadup.provinsi import Provinsi
+from app.schemas.sidadup.provinsi import ProvinsiCreate, ProvinsiUpdate, ProvinsiRead
 
 router = APIRouter(prefix="/api/provinsi", tags=["provinsi"])
 

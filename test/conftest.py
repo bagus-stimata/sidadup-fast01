@@ -8,98 +8,64 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import get_db
 
-# =========================
-# DB Test: Pakai Postgres (sesuai request)
-# =========================
+# -------------------------------
+# 1) DB test config (Postgres)
+# -------------------------------
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+psycopg2://desgreen:Welcome1#@127.0.0.1:5432/batukota_perizinan"
+    "postgresql+psycopg2://desgreen:Welcome1#@127.0.0.1:5432/batukota_perizinan",
 )
 engine = create_engine(TEST_DATABASE_URL, future=True)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
+TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
 
-# =========================
-# Mapping: file test -> model-model yang perlu dibuat jika file tsb di-skip
-#   (Tambah sendiri sesuai kebutuhan)
-# =========================
-from app.models.farea import FArea
-# contoh tambahan kalau perlu:
-# from app.models.user import User
-
+# -------------------------------
+# 2) Mapping: test file -> models
+#    HANYA dipakai untuk file yang DI-SKIP
+# -------------------------------
 TEST_FILE_MODEL_MAP = {
-    "test_farea.py": [FArea],
-    # "test_user.py": [User],
+    # contoh lain kalau mau skip tapi tetap butuh tabel
+    # "test_farea.py": [FArea],
 }
 
-# Set aktif yang akan di-skip:
-# - Default: semua key di TEST_FILE_MODEL_MAP kalau SKIP_EXTRA=1
-# - Atau override dinamis pakai CSV env SKIP_FILES="fileA.py,fileB.py"
-def _active_skip_set():
-    explicit = {x.strip() for x in os.getenv("SKIP_FILES", "").split(",") if x.strip()}
-    mapped = set(TEST_FILE_MODEL_MAP.keys())
-    if explicit:
-        return explicit
-    return mapped
+# -------------------------------
+# 3) Utility: daftar file yang di-skip
+#    - Pakai env SKIP_FILES="fileA.py,fileB.py"
+#    - Atau aktifkan default skip lama di DEFAULT_IGNORES
+# -------------------------------
+DEFAULT_IGNORES = {"test_farea.py"}
 
-# =========================
-# Track collected test files so we can ensure tables for ACTIVE tests too
-# =========================
-COLLECTED_FILES: set[str] = set()
+def get_skip_files() -> set[str]:
+    # SKIP_FILES menang; kalau kosong, pakai default ignores
+    csv = os.getenv("SKIP_FILES", "")
+    items = {x.strip() for x in csv.split(",") if x.strip()}
+    return items if items else set(DEFAULT_IGNORES)
 
-def pytest_collection_modifyitems(config, items):
-    for it in items:
-        nodeid = getattr(it, 'nodeid', '')
-        # nodeid like 'test/test_farea.py::test_xxx'
-        fname = nodeid.split('::', 1)[0].split('/')[-1]
-        if fname:
-            COLLECTED_FILES.add(fname)
-
-
-# =========================
-# Hook: skip file test tertentu
-# =========================
-
-# Skip test lama yang sudah digabung E2E
+# -------------------------------
+# 4) Hook: skip pengumpulan test
+# -------------------------------
 def pytest_ignore_collect(collection_path, config):
-    try:
-        name = collection_path.name  # pathlib.Path (pytest baru)
-    except AttributeError:
-        # fallback untuk pytest lama (py.path.local)
-        name = getattr(collection_path, 'basename', lambda: str(collection_path))()
-    SKIP = {"test_provinsi.py", "test_daerah.py", "test_kecamatan.py"}
-    if name in SKIP:
-        return True
+    name = getattr(collection_path, "name", None) or getattr(collection_path, "basename", lambda: "")()
+    return name in get_skip_files()
 
-# =========================
-# Ensure tables for test files that are SKIPPED or ACTIVE (collected)
-# =========================
+# -------------------------------
+# 5) Autouse fixture:
+#    Buat tabel HANYA untuk file yang DI-SKIP (sesuai mapping)
+# -------------------------------
 @pytest.fixture(scope="session", autouse=True)
-def _ensure_tables_for_needed_files():
-    """
-    Buat tabel untuk file yang:
-    - di-skip (jika SKIP_EXTRA=1), dan/atau
-    - AKTIF terkoleksi (ada di suite),
-    sesuai mapping TEST_FILE_MODEL_MAP. Tujuannya mencegah UndefinedTable
-    saat kode lain referensi model tersebut.
-    """
-    # files yang perlu dibuatkan tabel: union antara yang di-skip (jika diminta) dan yang terkoleksi
-    needed = set()
-    if os.getenv("SKIP_EXTRA") == "1":
-        needed.update(_active_skip_set())
-    needed.update(name for name in COLLECTED_FILES if name in TEST_FILE_MODEL_MAP)
-
-    for fname in needed:
+def ensure_tables_for_skipped_files():
+    skipped = get_skip_files()
+    for fname in skipped:
         for model in TEST_FILE_MODEL_MAP.get(fname, []):
             try:
                 model.__table__.create(bind=engine, checkfirst=True)
             except Exception:
-                # silent if already exists or no perms
+                # sengaja di-senyapkan kalau table sudah ada / tidak punya akses
                 pass
     yield
 
-# =========================
-# DB session & FastAPI overrides
-# =========================
+# -------------------------------
+# 6) DB session fixture & FastAPI override
+# -------------------------------
 @pytest.fixture()
 def db():
     session = TestingSessionLocal()

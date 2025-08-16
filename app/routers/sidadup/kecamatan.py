@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.core.database import get_db
-from app.models.kecamatan import Kecamatan
-from app.schemas.kecamatan import KecamatanCreate, KecamatanUpdate, KecamatanRead
+from app.models.sidadup.kecamatan import Kecamatan
+from app.schemas.sidadup.kecamatan import KecamatanCreate, KecamatanUpdate, KecamatanRead
 
 router = APIRouter(prefix="/api/kecamatan", tags=["kecamatan"])
 
