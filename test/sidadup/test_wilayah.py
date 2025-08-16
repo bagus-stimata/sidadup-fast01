@@ -37,8 +37,9 @@ def _cleanup():
         db.execute(text("DELETE FROM public.provinsi WHERE provinsi_id = :id2"), {"id2": PROV_ID + 1})
         db.execute(text("DELETE FROM public.provinsi WHERE nama LIKE :pname"), {"pname": "PROV-TEST-E2E%"})
         # reset sequence ke max id + 1
-        db.execute(text("SELECT setval('daerah_daerah_id_seq', COALESCE((SELECT MAX(daerah_id) FROM public.daerah), 0) + 1, false)"))
-        db.execute(text("SELECT setval('kecamatan_kecamatan_id_seq', COALESCE((SELECT MAX(kecamatan_id) FROM public.kecamatan), 0) + 1, false)"))
+        if engine.dialect.name == "postgresql":
+            db.execute(text("SELECT setval('daerah_daerah_id_seq', COALESCE((SELECT MAX(daerah_id) FROM public.daerah), 0) + 1, false)"))
+            db.execute(text("SELECT setval('kecamatan_kecamatan_id_seq', COALESCE((SELECT MAX(kecamatan_id) FROM public.kecamatan), 0) + 1, false)"))
         db.commit()
     finally:
         db.close()

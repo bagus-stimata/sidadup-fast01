@@ -115,5 +115,5 @@ def delete_kecamatan(kecamatan_id: int, db: Session = Depends(get_db)):
     if not obj:
         raise HTTPException(status_code=404, detail="Kecamatan not found")
     db.delete(obj)
-    db.flush()
+    db.commit()
     return None
