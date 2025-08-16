@@ -1,9 +1,9 @@
 from sqlalchemy import Integer, Column, String, DateTime, func
-from app.core.database import Base
+from app.core.database import Base, PUBLIC_SCHEMA
 
 class JenisUsaha(Base):
     __tablename__ = "jenis_usaha"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = {"schema": PUBLIC_SCHEMA}
 
     jenis_usaha_id = Column(Integer, primary_key=True, index=True, nullable=False, autoincrement=True)
     nama = Column(String(100), nullable=False)

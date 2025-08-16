@@ -1,6 +1,6 @@
 from sqlalchemy import BigInteger, Integer, Column, String, Date, Text, ForeignKey
 from sqlalchemy.types import UserDefinedType
-from app.core.database import Base
+from app.core.database import Base, PUBLIC_SCHEMA
 
 
 class Point(UserDefinedType):
@@ -8,9 +8,12 @@ class Point(UserDefinedType):
         return "POINT"
 
 
+SCHEMA_PREFIX = f"{PUBLIC_SCHEMA}." if PUBLIC_SCHEMA else ""
+
+
 class DataPerizinan(Base):
     __tablename__ = "data_perizinan"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = {"schema": PUBLIC_SCHEMA}
 
     data_perizinan_id = Column(
         String,
@@ -28,19 +31,19 @@ class DataPerizinan(Base):
     )
     subsektor_id = Column(
         Integer,
-        ForeignKey("public.sub_sektor.subsektor_id", onupdate="CASCADE", ondelete="CASCADE"),
+        ForeignKey(f"{SCHEMA_PREFIX}sub_sektor.subsektor_id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     wilayah_id = Column(
         BigInteger,
-        ForeignKey("public.wilayah.wilayah_id", onupdate="NO ACTION", ondelete="NO ACTION"),
+        ForeignKey(f"{SCHEMA_PREFIX}wilayah.wilayah_id", onupdate="NO ACTION", ondelete="NO ACTION"),
         nullable=True,
         index=True,
     )
     kecamatan_id = Column(
         BigInteger,
-        ForeignKey("public.kecamatan.kecamatan_id", onupdate="NO ACTION", ondelete="NO ACTION"),
+        ForeignKey(f"{SCHEMA_PREFIX}kecamatan.kecamatan_id", onupdate="NO ACTION", ondelete="NO ACTION"),
         nullable=True,
         index=True,
     )

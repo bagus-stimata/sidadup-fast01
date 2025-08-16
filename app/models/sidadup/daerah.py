@@ -1,15 +1,18 @@
 from sqlalchemy import BigInteger, Integer, Column, String, ForeignKey, DateTime, func
-from app.core.database import Base
+from app.core.database import Base, PUBLIC_SCHEMA
+
+SCHEMA_PREFIX = f"{PUBLIC_SCHEMA}." if PUBLIC_SCHEMA else ""
+
 
 class Daerah(Base):
     __tablename__ = "daerah"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = {"schema": PUBLIC_SCHEMA}
 
     daerah_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     nama = Column(String(100), nullable=False)
     provinsi_id = Column(
         BigInteger,
-        ForeignKey("public.provinsi.provinsi_id", onupdate="CASCADE", ondelete="CASCADE"),
+        ForeignKey(f"{SCHEMA_PREFIX}provinsi.provinsi_id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
