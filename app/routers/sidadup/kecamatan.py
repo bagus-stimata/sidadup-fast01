@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+import math
 
 from app.core.database import get_db
 from app.models.sidadup.kecamatan import Kecamatan
@@ -33,7 +33,61 @@ def list_kecamatan_by_daerah(
     query = db.query(Kecamatan).filter(Kecamatan.daerah_id == daerah_id)
     if q:
         query = query.filter(Kecamatan.nama.ilike(f"%{q}%"))
-    return query.order_by(Kecamatan.daerah_id).offset(offset).limit(limit).all()
+    return query.order_by(Kecamatan.kecamatan_id).offset(offset).limit(limit).all()
+
+
+# New paged endpoint
+@router.get("/by-daerah/{daerah_id}/paged")
+def list_kecamatan_by_daerah_paged(
+    daerah_id: int,
+    db: Session = Depends(get_db),
+    search: Optional[str] = Query(None, description="Filter by nama (ILIKE)"),
+    q: Optional[str] = Query(None, description="Alias of search (ILIKE)"),
+    pageNo: int = Query(0, ge=0),
+    pageSize: int = Query(50, ge=1, le=200),
+    sortBy: str = Query("id"),
+    order: str = Query("ASC"),
+):
+    # normalisasi param FE
+    term = (search or q or "").strip()
+    allowed_sort = {
+        "id": "kecamatan_id",
+        "kecamatan_id": "kecamatan_id",
+        "nama": "nama",
+        "daerah_id": "daerah_id",
+        "created_at": "created_at",
+        "updated_at": "updated_at",
+    }
+    sort_prop = allowed_sort.get(sortBy.lower(), "kecamatan_id")
+    direction_desc = order.lower() == "desc"
+
+    query = db.query(Kecamatan).filter(Kecamatan.daerah_id == daerah_id)
+    if term:
+        query = query.filter(Kecamatan.nama.ilike(f"%{term}%"))
+
+    total = query.count()
+
+    sort_col = getattr(Kecamatan, sort_prop)
+    if direction_desc:
+        sort_col = sort_col.desc()
+
+    rows = (
+        query.order_by(sort_col)
+        .offset(pageNo * pageSize)
+        .limit(pageSize)
+        .all()
+    )
+
+    # serialize via schema agar JSON-able
+    items = [KecamatanRead.model_validate(r).model_dump() for r in rows]
+
+    return {
+        "items": items,
+        "currentPage": pageNo,
+        "pageSize": pageSize,
+        "totalItems": total,
+        "totalPages": math.ceil(total / pageSize) if pageSize else 0,
+    }
 
 @router.get("/{kecamatan_id}", response_model=KecamatanRead)
 def get_kecamatan(kecamatan_id: int, db: Session = Depends(get_db)):

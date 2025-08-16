@@ -22,7 +22,9 @@ from app.models.sidadup.kecamatan import Kecamatan
 # Pakai ID/nama tetap, tapi selalu dibersihkan dulu biar gak duplikat
 PROV_ID = 990001
 DAERAH_NAME = "DAERAH-TEST-E2E"
+DAERAH_NAME2 = "DAERAH-TEST-E2E-2"
 KEC_NAME = "KEC-TEST-E2E"
+KEC_NAME2 = "KEC-TEST-E2E-2"
 
 
 def _ensure_tables():
@@ -37,7 +39,9 @@ def _cleanup():
     try:
         # child -> parent
         db.execute(text("DELETE FROM public.kecamatan WHERE nama = :n"), {"n": KEC_NAME})
+        db.execute(text("DELETE FROM public.kecamatan WHERE nama = :n2"), {"n2": KEC_NAME2})
         db.execute(text("DELETE FROM public.daerah WHERE nama = :n"), {"n": DAERAH_NAME})
+        db.execute(text("DELETE FROM public.daerah WHERE nama = :n2"), {"n2": DAERAH_NAME2})
         db.execute(text("DELETE FROM public.provinsi WHERE provinsi_id = :id"), {"id": PROV_ID})
         # reset sequence ke max id + 1
         db.execute(text("SELECT setval('daerah_daerah_id_seq', COALESCE((SELECT MAX(daerah_id) FROM public.daerah), 0) + 1, false)"))
@@ -95,6 +99,20 @@ async def test_wilayah_end_to_end():
         assert d_body["nama"] == DAERAH_NAME
         assert d_body["provinsi_id"] == PROV_ID
 
+        # create a second daerah to test paging/sorting on daerah
+        d2_create = await ac.post(
+            "/api/daerah",
+            json={
+                "nama": DAERAH_NAME2,
+                "provinsi_id": PROV_ID,
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            },
+        )
+        assert d2_create.status_code == 201
+        daerah_id2 = d2_create.json()["daerah_id"]
+
+
         # === DAERAH BY PROVINSI ===
         d_list_by_prov = await ac.get(f"/api/daerah/by-provinsi/{PROV_ID}")
         assert d_list_by_prov.status_code == 200
@@ -109,6 +127,61 @@ async def test_wilayah_end_to_end():
         finally:
             db.close()
 
+        # === DAERAH BY PROVINSI (PAGED) ===
+        d_paged = await ac.get(
+            f"/api/daerah/by-provinsi/{PROV_ID}/paged",
+            params={
+                "pageNo": 0,
+                "pageSize": 1,
+                "sortBy": "id",
+                "order": "DESC",
+                "search": "",
+            },
+        )
+        assert d_paged.status_code == 200, d_paged.text
+        d_body_paged = d_paged.json()
+        assert set(d_body_paged.keys()) == {"items", "currentPage", "pageSize", "totalItems", "totalPages"}
+        assert d_body_paged["currentPage"] == 0
+        assert d_body_paged["pageSize"] == 1
+        assert d_body_paged["totalItems"] >= 2
+        assert isinstance(d_body_paged["items"], list) and len(d_body_paged["items"]) == 1
+        # with DESC on id and pageSize=1, the first item should be the latest created (daerah_id2)
+        assert d_body_paged["items"][0]["daerah_id"] == daerah_id2
+
+        # search should filter only matching daerah
+        d_paged_search = await ac.get(
+            f"/api/daerah/by-provinsi/{PROV_ID}/paged",
+            params={
+                "pageNo": 0,
+                "pageSize": 10,
+                "sortBy": "id",
+                "order": "ASC",
+                "search": DAERAH_NAME,
+            },
+        )
+        assert d_paged_search.status_code == 200
+        d_body_paged2 = d_paged_search.json()
+        assert any(it["daerah_id"] == daerah_id for it in d_body_paged2["items"]) and all(
+            DAERAH_NAME in it["nama"] for it in d_body_paged2["items"]
+        )
+
+        # === DAERAH PAGED (GLOBAL) ===
+        d_global_paged = await ac.get(
+            "/api/daerah/paged",
+            params={
+                "pageNo": 0,
+                "pageSize": 2,
+                "sortBy": "id",
+                "order": "DESC",
+                "search": "DAERAH-TEST-E2E",
+            },
+        )
+        assert d_global_paged.status_code == 200
+        d_global_body = d_global_paged.json()
+        assert d_global_body["pageSize"] == 2
+        assert isinstance(d_global_body["items"], list)
+        assert any(it["daerah_id"] in {daerah_id, daerah_id2} for it in d_global_body["items"])
+
         # === KECAMATAN (FK ke DAERAH) ===
         k_create = await ac.post(
             "/api/kecamatan",
@@ -121,6 +194,19 @@ async def test_wilayah_end_to_end():
         )
         assert k_create.status_code == 201
         kec_id = k_create.json()["kecamatan_id"]
+
+        # create a second kecamatan to test paging/sorting
+        k2_create = await ac.post(
+            "/api/kecamatan",
+            json={
+                "nama": KEC_NAME2,
+                "daerah_id": daerah_id,
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            },
+        )
+        assert k2_create.status_code == 201
+        kec_id2 = k2_create.json()["kecamatan_id"]
 
         k_get = await ac.get(f"/api/kecamatan/{kec_id}")
         assert k_get.status_code == 200
@@ -149,6 +235,44 @@ async def test_wilayah_end_to_end():
         k_list_by_daerah = await ac.get(f"/api/kecamatan/by-daerah/{daerah_id}")
         assert k_list_by_daerah.status_code == 200
         assert any(x["kecamatan_id"] == kec_id for x in k_list_by_daerah.json())
+
+        # === KECAMATAN BY DAERAH (PAGED) ===
+        paged = await ac.get(
+            f"/api/kecamatan/by-daerah/{daerah_id}/paged",
+            params={
+                "pageNo": 0,
+                "pageSize": 1,
+                "sortBy": "id",
+                "order": "DESC",
+                "search": "",
+            },
+        )
+        assert paged.status_code == 200, paged.text
+        body = paged.json()
+        assert set(body.keys()) == {"items", "currentPage", "pageSize", "totalItems", "totalPages"}
+        assert body["currentPage"] == 0
+        assert body["pageSize"] == 1
+        assert body["totalItems"] >= 2
+        assert isinstance(body["items"], list) and len(body["items"]) == 1
+        # with DESC on id and pageSize=1, the first item should be the latest created (kec_id2)
+        assert body["items"][0]["kecamatan_id"] == kec_id2
+
+        # with search filter should return only the matching first kecamatan
+        paged_search = await ac.get(
+            f"/api/kecamatan/by-daerah/{daerah_id}/paged",
+            params={
+                "pageNo": 0,
+                "pageSize": 10,
+                "sortBy": "id",
+                "order": "ASC",
+                "search": KEC_NAME,
+            },
+        )
+        assert paged_search.status_code == 200
+        body2 = paged_search.json()
+        assert any(it["kecamatan_id"] == kec_id for it in body2["items"]) and all(
+            KEC_NAME in it["nama"] for it in body2["items"]
+        )
 
         db = SessionLocal()
         try:
