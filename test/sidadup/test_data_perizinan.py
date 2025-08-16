@@ -23,6 +23,8 @@ def _ensure_tables():
     Daerah.__table__.create(bind=engine, checkfirst=True)
     Kecamatan.__table__.create(bind=engine, checkfirst=True)
     Wilayah.__table__.create(bind=engine, checkfirst=True)
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE IF NOT EXISTS public.wilayah (wilayah_id BIGINT PRIMARY KEY)"))
     SektorPerizinan.__table__.create(bind=engine, checkfirst=True)
     SubSektor.__table__.create(bind=engine, checkfirst=True)
     DataPerizinan.__table__.create(bind=engine, checkfirst=True)
