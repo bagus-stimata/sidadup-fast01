@@ -14,7 +14,9 @@ bcrypt==4.3.0
 # MySQL (pilih salah satu):
 PyMySQL==1.1.1          # pure Python
 # PostgreSQL:
-psycopg2-binary==2.9.10
+#psycopg2-binary==2.9.10
+#atau
+psycopg2==2.9.10
 
 PyMySQL==1.1.1
 

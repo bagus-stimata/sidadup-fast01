@@ -40,14 +40,14 @@ async def test_create_farea():
         assert response.status_code == 200
 
 @pytest.mark.asyncio
-async def test_create_farea_del():
+async def test_create_farea_del(db):
     db = SessionLocal()
     db.query(FArea).filter(FArea.id == 9999).delete()
     db.commit()
     db.close()
 
     @pytest.mark.asyncio
-    async def test_farea_count_endpoint():
+    async def test_farea_count_endpoint(db):
         # Buat token valid
         token = create_access_token({
             "username": "test_user",
