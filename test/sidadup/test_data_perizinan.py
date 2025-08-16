@@ -9,6 +9,7 @@ from app.models.sidadup.sub_sektor import SubSektor
 from app.models.sidadup.provinsi import Provinsi
 from app.models.sidadup.daerah import Daerah
 from app.models.sidadup.kecamatan import Kecamatan
+from app.models.sidadup.wilayah import Wilayah
 from app.models.sidadup.data_perizinan import DataPerizinan
 
 SEKTOR_NAME = "SEK-DP-TEST"
@@ -21,6 +22,7 @@ def _ensure_tables():
     Provinsi.__table__.create(bind=engine, checkfirst=True)
     Daerah.__table__.create(bind=engine, checkfirst=True)
     Kecamatan.__table__.create(bind=engine, checkfirst=True)
+    Wilayah.__table__.create(bind=engine, checkfirst=True)
     with engine.begin() as conn:
         conn.execute(text("CREATE TABLE IF NOT EXISTS public.wilayah (wilayah_id BIGINT PRIMARY KEY)"))
     SektorPerizinan.__table__.create(bind=engine, checkfirst=True)
