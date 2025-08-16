@@ -7,6 +7,10 @@ from app.routers.tools import shape_to_geojson
 from app.routers.sidadup import kecamatan
 from app.routers.sidadup import provinsi as provinsi_router
 from app.routers.sidadup import daerah as daerah_router
+from app.routers.perizinan import sektor_perizinan as sektor_router
+from app.routers.perizinan import sub_sektor as subsektor_router
+from app.routers.perizinan import badan_usaha as badan_usaha_router
+from app.routers.perizinan import jenis_usaha as jenis_usaha_router
 
 
 app = FastAPI()
@@ -23,6 +27,10 @@ app.include_router(shape_to_geojson.router)
 app.include_router(kecamatan.router)
 app.include_router(provinsi_router.router)
 app.include_router(daerah_router.router)
+app.include_router(sektor_router.router)
+app.include_router(subsektor_router.router)
+app.include_router(badan_usaha_router.router)
+app.include_router(jenis_usaha_router.router)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
