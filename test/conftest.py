@@ -1,7 +1,7 @@
 # test/conftest.py
 import os
 import pytest
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
@@ -13,21 +13,9 @@ from app.core.database import get_db
 # -------------------------------
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "sqlite:///./test.db",
+    "postgresql+psycopg2://desgreen:Welcome1#@127.0.0.1:5432/batukota_perizinan",
 )
-
-connect_args = {"check_same_thread": False} if TEST_DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(TEST_DATABASE_URL, connect_args=connect_args, future=True)
-
-if TEST_DATABASE_URL.startswith("sqlite"):
-    engine = engine.execution_options(schema_translate_map={"public": None})
-
-    db_path = engine.url.database
-
-    @event.listens_for(engine, "connect")
-    def _sqlite_on_connect(dbapi_connection, connection_record):
-        dbapi_connection.execute(f"ATTACH DATABASE '{db_path}' AS public")
-
+engine = create_engine(TEST_DATABASE_URL, future=True)
 TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
 
 # -------------------------------
