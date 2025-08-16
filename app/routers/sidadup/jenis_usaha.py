@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.jenis_usaha import JenisUsaha
-from app.schemas.perizinan.jenis_usaha import (
+from app.models.sidadup.jenis_usaha import JenisUsaha
+from app.schemas.sidadup.jenis_usaha import (
     JenisUsahaCreate,
     JenisUsahaUpdate,
     JenisUsahaRead,

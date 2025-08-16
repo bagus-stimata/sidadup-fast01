@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.sub_sektor import SubSektor
-from app.schemas.perizinan.sub_sektor import (
+from app.models.sidadup.sub_sektor import SubSektor
+from app.schemas.sidadup.sub_sektor import (
     SubSektorCreate,
     SubSektorUpdate,
     SubSektorRead,

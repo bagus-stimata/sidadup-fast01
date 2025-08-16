@@ -6,7 +6,7 @@ from datetime import datetime
 from app.main import app
 from app.core.database import SessionLocal, engine
 from app.models.sidadup.provinsi import Provinsi
-from app.models.daerah import Daerah
+from app.models.sidadup.daerah import Daerah
 from app.models.sidadup.kecamatan import Kecamatan
 
 # Pakai ID/nama tetap, tapi selalu dibersihkan dulu biar gak duplikat

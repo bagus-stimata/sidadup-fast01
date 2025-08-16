@@ -1,12 +1,11 @@
 from typing import List, Optional
 import math
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc
 
 from app.core.database import get_db
-from app.models.sektor_perizinan import SektorPerizinan
-from app.schemas.perizinan.sektor_perizinan import (
+from app.models.sidadup.sektor_perizinan import SektorPerizinan
+from app.schemas.sidadup.sektor_perizinan import (
     SektorPerizinanCreate,
     SektorPerizinanUpdate,
     SektorPerizinanRead,

@@ -1,7 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from app.models.sidadup.farea import FArea
+from app.models.farea import FArea
 from app.schemas.farea import FAreaCreate
 
 def create_farea(db: Session, farea_in: FAreaCreate):

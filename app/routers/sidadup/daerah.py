@@ -4,7 +4,7 @@ import math
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.daerah import Daerah
+from app.models.sidadup.daerah import Daerah
 from app.schemas.sidadup.daerah import DaerahCreate, DaerahUpdate, DaerahRead
 
 

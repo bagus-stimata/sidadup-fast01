@@ -1,2 +1,2 @@
-from app.models.sidadup.farea import FArea
+from app.models.farea import FArea
 from .user import User
