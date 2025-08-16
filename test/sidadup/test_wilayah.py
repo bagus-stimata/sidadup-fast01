@@ -2,16 +2,6 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text, select
 from datetime import datetime
-@pytest.fixture(autouse=True, scope="function")
-def _reset_db():
-    _ensure_tables()
-    _cleanup()
-    yield
-    _cleanup()
-import pytest
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy import text, select
-from datetime import datetime
 
 from app.main import app
 from app.core.database import SessionLocal, engine
@@ -43,12 +33,25 @@ def _cleanup():
         db.execute(text("DELETE FROM public.daerah WHERE nama = :n"), {"n": DAERAH_NAME})
         db.execute(text("DELETE FROM public.daerah WHERE nama = :n2"), {"n2": DAERAH_NAME2})
         db.execute(text("DELETE FROM public.provinsi WHERE provinsi_id = :id"), {"id": PROV_ID})
+        # hapus provinsi kedua (PROV_ID + 1) dan semua yang pake prefix nama test
+        db.execute(text("DELETE FROM public.provinsi WHERE provinsi_id = :id2"), {"id2": PROV_ID + 1})
+        db.execute(text("DELETE FROM public.provinsi WHERE nama LIKE :pname"), {"pname": "PROV-TEST-E2E%"})
         # reset sequence ke max id + 1
         db.execute(text("SELECT setval('daerah_daerah_id_seq', COALESCE((SELECT MAX(daerah_id) FROM public.daerah), 0) + 1, false)"))
         db.execute(text("SELECT setval('kecamatan_kecamatan_id_seq', COALESCE((SELECT MAX(kecamatan_id) FROM public.kecamatan), 0) + 1, false)"))
         db.commit()
     finally:
         db.close()
+
+
+# Ensure clean DB state per test: create needed tables, then cleanup before & after.
+@pytest.fixture(autouse=True, scope="function")
+def _reset_db():
+    """Ensure clean DB state per test: create needed tables, then cleanup before & after."""
+    _ensure_tables()
+    _cleanup()
+    yield
+    _cleanup()
 
 
 @pytest.mark.asyncio
@@ -79,6 +82,58 @@ async def test_wilayah_end_to_end():
             assert isinstance(prow.updated_at, (datetime, type(None)))
         finally:
             db.close()
+
+            # === PROVINSI kedua untuk uji paging/sorting ===
+            PROV_ID2 = PROV_ID + 1
+            PROV_NAME2 = "PROV-TEST-E2E-2"
+            p2_create = await ac.post(
+                "/api/provinsi",
+                json={
+                    "provinsi_id": PROV_ID2,
+                    "nama": PROV_NAME2,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                },
+            )
+            assert p2_create.status_code == 201, p2_create.text
+
+            # === PROVINSI PAGED ===
+            p_paged = await ac.get(
+                "/api/provinsi/paged",
+                params={
+                    "pageNo": 0,
+                    "pageSize": 1,
+                    "sortBy": "id",
+                    "order": "DESC",
+                    "search": "PROV-TEST-E2E",
+                },
+            )
+            assert p_paged.status_code == 200, p_paged.text
+            p_body = p_paged.json()
+            assert set(p_body.keys()) == {"items", "currentPage", "pageSize", "totalItems", "totalPages"}
+            assert p_body["currentPage"] == 0
+            assert p_body["pageSize"] == 1
+            assert p_body["totalItems"] >= 2
+            assert isinstance(p_body["items"], list) and len(p_body["items"]) == 1
+            # dengan DESC by id, item pertama harus provinsi terbaru (PROV_ID2)
+            assert p_body["items"][0]["provinsi_id"] == PROV_ID2
+
+            # Search harus filter nama yang mengandung kata kunci dan mengembalikan PROV_ID
+            p_paged_search = await ac.get(
+                "/api/provinsi/paged",
+                params={
+                    "pageNo": 0,
+                    "pageSize": 10,
+                    "sortBy": "id",
+                    "order": "ASC",
+                    "search": "PROV-TEST-E2E",
+                },
+            )
+            assert p_paged_search.status_code == 200, p_paged_search.text
+            p_body2 = p_paged_search.json()
+            assert any(it["provinsi_id"] == PROV_ID for it in p_body2["items"]) and all(
+                "PROV-TEST-E2E" in it["nama"] for it in p_body2["items"]
+            )
 
         # === DAERAH (FK ke PROVINSI) ===
         d_create = await ac.post(
@@ -293,6 +348,9 @@ async def test_wilayah_end_to_end():
         d_del = await ac.delete(f"/api/daerah/{daerah_id}")
         assert d_del.status_code == 204
 
+        p_del2 = await ac.delete(f"/api/provinsi/{PROV_ID2}")
+        assert p_del2.status_code == 204
+
         p_del = await ac.delete(f"/api/provinsi/{PROV_ID}")
         assert p_del.status_code == 204
 
@@ -300,3 +358,4 @@ async def test_wilayah_end_to_end():
         assert (await ac.get(f"/api/kecamatan/{kec_id}")).status_code == 404
         assert (await ac.get(f"/api/daerah/{daerah_id}")).status_code == 404
         assert (await ac.get(f"/api/provinsi/{PROV_ID}")).status_code == 404
+
