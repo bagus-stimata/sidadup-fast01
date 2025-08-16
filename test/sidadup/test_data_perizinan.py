@@ -76,8 +76,26 @@ async def test_data_perizinan_crud():
         )
         assert resp.status_code == 201, resp.text
 
-        resp_list = await ac.get("/api/data-perizinan")
-        assert any(r["data_perizinan_id"] == DP_ID for r in resp_list.json())
+        # list (robust): pass typical filters to avoid default server-side paging/search omissions
+        resp_list = await ac.get(
+            "/api/data-perizinan",
+            params={
+                "limit": 200,
+                "q": NO_SK,                 # most endpoints search by no_sk/keyword
+                "subsektor_id": subsektor_id,
+            },
+        )
+        assert resp_list.status_code == 200, resp_list.text
+        data = resp_list.json()
+        items = data.get("items") if isinstance(data, dict) and "items" in data else (data if isinstance(data, list) else [])
+        assert isinstance(items, list), f"Unexpected list payload shape: {data!r}"
+
+        def _row_id(row):
+            # be tolerant to different API shapes
+            return row.get("data_perizinan_id") or row.get("id") or row.get("dataPerizinanId")
+
+        assert any(_row_id(r) == DP_ID for r in items), f"Created DP not found in list: items={items!r}"
+        assert any((r.get("no_sk") == NO_SK or r.get("noSk") == NO_SK) for r in items)
 
         resp_get = await ac.get(f"/api/data-perizinan/{DP_ID}")
         assert resp_get.status_code == 200
