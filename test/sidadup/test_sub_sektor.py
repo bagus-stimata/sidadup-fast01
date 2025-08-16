@@ -42,16 +42,9 @@ async def test_sub_sektor_crud():
         assert s_resp.status_code == 201, s_resp.text
         sektor_id = s_resp.json()["sektor_id"]
 
-        now = datetime.utcnow().isoformat()
         resp = await ac.post(
             "/api/sub-sektor",
-            json={
-                "nama": SUB_NAME,
-                "sektor_id": sektor_id,
-                "custom_column": "CC",
-                "created_at": now,
-                "updated_at": now,
-            },
+            json={"nama": SUB_NAME, "sektor_id": sektor_id, "custom_column": "CC"},
         )
         assert resp.status_code == 201, resp.text
         sub_id = resp.json()["subsektor_id"]
