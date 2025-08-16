@@ -1,11 +1,11 @@
-from sqlalchemy import BigInteger, Column, String, ForeignKey, DateTime, func
+from sqlalchemy import BigInteger, Integer, Column, String, ForeignKey, DateTime, func
 from app.core.database import Base
 
 class Daerah(Base):
     __tablename__ = "daerah"
     __table_args__ = {"schema": "public"}
 
-    daerah_id = Column(BigInteger, primary_key=True, index=True)  # DB punya default seq
+    daerah_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     nama = Column(String(100), nullable=False)
     provinsi_id = Column(
         BigInteger,

@@ -1,14 +1,14 @@
-from sqlalchemy import BigInteger, Column, String, ForeignKey, Text, DateTime, func
+from sqlalchemy import Integer, Column, String, ForeignKey, Text, DateTime, func
 from app.core.database import Base
 
 class SubSektor(Base):
     __tablename__ = "sub_sektor"
     __table_args__ = {"schema": "public"}
 
-    subsektor_id = Column(BigInteger, primary_key=True, index=True, nullable=False)
+    subsektor_id = Column(Integer, primary_key=True, index=True, nullable=False, autoincrement=True)
     nama = Column(String, nullable=False)
     sektor_id = Column(
-        BigInteger,
+        Integer,
         ForeignKey("public.sektor_perizinan.sektor_id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
         index=True,

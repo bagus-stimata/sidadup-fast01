@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, String, Date, Text, ForeignKey
+from sqlalchemy import BigInteger, Integer, Column, String, Date, Text, ForeignKey
 from sqlalchemy.types import UserDefinedType
 from app.core.database import Base
 
@@ -27,7 +27,7 @@ class DataPerizinan(Base):
         comment="json value,  key berdasarkan, key di custom_column di subsektor",
     )
     subsektor_id = Column(
-        BigInteger,
+        Integer,
         ForeignKey("public.sub_sektor.subsektor_id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
         index=True,
