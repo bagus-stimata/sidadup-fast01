@@ -2,6 +2,16 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text, select
 from datetime import datetime
+@pytest.fixture(autouse=True, scope="function")
+def _reset_db():
+    _ensure_tables()
+    _cleanup()
+    yield
+    _cleanup()
+import pytest
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy import text, select
+from datetime import datetime
 
 from app.main import app
 from app.core.database import SessionLocal, engine
@@ -39,8 +49,6 @@ def _cleanup():
 
 @pytest.mark.asyncio
 async def test_wilayah_end_to_end():
-    _ensure_tables()
-    _cleanup()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # === PROVINSI ===
@@ -87,6 +95,11 @@ async def test_wilayah_end_to_end():
         assert d_body["nama"] == DAERAH_NAME
         assert d_body["provinsi_id"] == PROV_ID
 
+        # === DAERAH BY PROVINSI ===
+        d_list_by_prov = await ac.get(f"/api/daerah/by-provinsi/{PROV_ID}")
+        assert d_list_by_prov.status_code == 200
+        assert any(x["daerah_id"] == daerah_id for x in d_list_by_prov.json())
+
         # Cek timestamp di DB untuk daerah
         db = SessionLocal()
         try:
@@ -131,6 +144,11 @@ async def test_wilayah_end_to_end():
         k_upd = await ac.put(f"/api/kecamatan/{kec_id}", json={"nama": "KEC-EDIT-E2E"})
         assert k_upd.status_code == 200
         assert k_upd.json()["nama"] == "KEC-EDIT-E2E"
+
+        # === KECAMATAN BY DAERAH ===
+        k_list_by_daerah = await ac.get(f"/api/kecamatan/by-daerah/{daerah_id}")
+        assert k_list_by_daerah.status_code == 200
+        assert any(x["kecamatan_id"] == kec_id for x in k_list_by_daerah.json())
 
         db = SessionLocal()
         try:

@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -17,11 +17,24 @@ def create_daerah(payload: DaerahCreate, db: Session = Depends(get_db)):
 @router.get("", response_model=List[DaerahRead])
 def list_daerah(
     db: Session = Depends(get_db),
-    q: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
+    q: Optional[str] = Query(None, description="Filter by nama (ILIKE)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
 ):
     query = db.query(Daerah)
+    if q:
+        query = query.filter(Daerah.nama.ilike(f"%{q}%"))
+    return query.order_by(Daerah.daerah_id).offset(offset).limit(limit).all()
+
+@router.get("/by-provinsi/{provinsi_id}", response_model=List[DaerahRead])
+def list_daerah_by_provinsi(
+    provinsi_id: int,
+    db: Session = Depends(get_db),
+    q: Optional[str] = Query(None, description="Filter by nama (ILIKE)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    query = db.query(Daerah).filter(Daerah.provinsi_id == provinsi_id)
     if q:
         query = query.filter(Daerah.nama.ilike(f"%{q}%"))
     return query.order_by(Daerah.daerah_id).offset(offset).limit(limit).all()
@@ -52,3 +65,4 @@ def delete_daerah(daerah_id: int, db: Session = Depends(get_db)):
     db.delete(obj)
     db.commit()
     return None
+

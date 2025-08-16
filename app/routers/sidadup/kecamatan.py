@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -20,6 +21,19 @@ def list_kecamatan(db: Session = Depends(get_db), q: str | None = None, limit: i
     if q:
         query = query.filter(Kecamatan.nama.ilike(f"%{q}%"))
     return query.order_by(Kecamatan.kecamatan_id).offset(offset).limit(limit).all()
+
+@router.get("/by-daerah/{daerah_id}", response_model=List[KecamatanRead])
+def list_kecamatan_by_daerah(
+    daerah_id: int,
+    db: Session = Depends(get_db),
+    q: Optional[str] = Query(None, description="Filter by nama (ILIKE)"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    query = db.query(Kecamatan).filter(Kecamatan.daerah_id == daerah_id)
+    if q:
+        query = query.filter(Kecamatan.nama.ilike(f"%{q}%"))
+    return query.order_by(Kecamatan.daerah_id).offset(offset).limit(limit).all()
 
 @router.get("/{kecamatan_id}", response_model=KecamatanRead)
 def get_kecamatan(kecamatan_id: int, db: Session = Depends(get_db)):
