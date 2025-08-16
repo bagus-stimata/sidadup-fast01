@@ -1,9 +1,9 @@
 from sqlalchemy import BigInteger, Column, String, DateTime, func
-from app.core.database import Base
+from app.core.database import Base, PUBLIC_SCHEMA
 
 class Provinsi(Base):
     __tablename__ = "provinsi"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = {"schema": PUBLIC_SCHEMA}
 
     provinsi_id = Column(BigInteger, primary_key=True, index=True, nullable=False)
     nama = Column(String(100), nullable=False)
