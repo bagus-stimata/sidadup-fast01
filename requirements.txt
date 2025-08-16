@@ -11,7 +11,13 @@ PyJWT[crypto]==2.10.1
 passlib[bcrypt]==1.7.4
 bcrypt==4.3.0
 
+# MySQL (pilih salah satu):
+PyMySQL==1.1.1          # pure Python
+# PostgreSQL:
+psycopg2-binary==2.9.10
+
 PyMySQL==1.1.1
+
 alembic>=1.15.0,<1.17
 python-dotenv
 

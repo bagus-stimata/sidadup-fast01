@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, text
+from app.core.database import Base
 from datetime import datetime
 
-Base = declarative_base()
 
 class FArea(Base):
     __tablename__ = "farea"
@@ -14,8 +13,8 @@ class FArea(Base):
     kode2 = Column(String(20), default="", nullable=False)
     description = Column(String(100), default="", nullable=False)
     fdivisionBean = Column(Integer, default=0, nullable=False)
-    statusActive = Column(Boolean, default=True, nullable=False)
+    statusActive = Column(Boolean, nullable=False, server_default=text("true"))
     fregionBean = Column(Integer, default=0, nullable=True)
     created = Column(DateTime, default=datetime.utcnow)
-    modified = Column(DateTime, default=datetime.utcnow)
+    modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     modifiedBy = Column(String(30), default="", nullable=True)
